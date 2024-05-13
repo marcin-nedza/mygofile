@@ -14,7 +14,6 @@ type DefaultDecoder struct {
 type DefaultDecoder2 struct {
 }
 func (dec DefaultDecoder) Decode(r io.Reader, msg *RPC) error {
-	fmt.Println("---",msg)
 	buf := make([]byte, 1024)
 	n, err := r.Read(buf)
 	if err != nil {

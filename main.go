@@ -1,29 +1,41 @@
 package main
 
 import (
+	"bytes"
 	"myfile/p2p"
 	"time"
 )
 
-func makeServer(addr string) *FileServer{
+func makeServer(addr string, nodes ...string) *FileServer {
 	tcpTransportOpt := p2p.TCPTransportOpts{
 		ListenAddr: addr,
-		Decoder: p2p.DefaultDecoder2{},
+		Decoder:    p2p.DefaultDecoder{},
 	}
 	tcpTransport := p2p.NewTCPTransport(tcpTransportOpt)
 
 	fileserverOpts := FileServerOpts{
-		Transport:  tcpTransport,
+		Transport:         tcpTransport,
+		PathtransformFunc: CASPathtransformFunc,
+		StorageRoot:       addr + "_storage",
+		BootstrapNodes:    nodes,
 	}
 
-	s :=  NewFileServer(fileserverOpts)
-	tcpTransport.OnPeer=s.OnPeer	
+	s := NewFileServer(fileserverOpts)
+	tcpTransport.OnPeer = s.OnPeer
 	return s
 }
 func main() {
 	s1 := makeServer(":3000")
+	s2 := makeServer(":4000", ":3000")
 	time.Sleep(time.Second)
-	go s1.Start()
+	go func() {
+		s1.Start()
+	}()
 	time.Sleep(time.Second)
+	go s2.Start()
+	data := bytes.NewReader([]byte("jojojojo"))
+	s1.Store("heja", data)
+	time.Sleep(time.Second)
+	// RenderMenu()
 	select {}
 }

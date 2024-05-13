@@ -4,6 +4,7 @@ import "net"
 
 type Peer interface {
 	net.Conn
+	Send([]byte)error
 }
 
 type Transport interface {

@@ -6,7 +6,7 @@ import (
 )
 
 type TCPPeer struct {
-	 net.Conn
+	net.Conn
 }
 
 func NewTCPPeer(conn net.Conn) *TCPPeer {
@@ -15,10 +15,18 @@ func NewTCPPeer(conn net.Conn) *TCPPeer {
 	}
 }
 
+func (t *TCPPeer) Send(m []byte) error {
+	 fmt.Println("Sending bytes through tcp conn")
+	n, err := t.Conn.Write(m)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("Wrote (%d) bytes to conn",n)
+	return nil
+}
 func (t *TCPPeer) Close() error {
 	return t.Close()
 }
-
 
 type TCPTransportOpts struct {
 	ListenAddr string
@@ -50,6 +58,7 @@ func (t *TCPTransport) Dial(addr string) error {
 }
 
 func (t *TCPTransport) Consume() <-chan RPC {
+	fmt.Println("consume")
 	return t.rpcch
 }
 
@@ -60,6 +69,7 @@ func (t *TCPTransport) Close() error {
 func (t *TCPTransport) ListenAndAccept() error {
 	var err error
 	t.listener, err = net.Listen("tcp", t.ListenAddr)
+	fmt.Println("Tcp Listen")
 	if err != nil {
 		return err
 	}
@@ -72,6 +82,7 @@ func (t *TCPTransport) ListenAndAccept() error {
 func (t *TCPTransport) startAcceptLoop() {
 	for {
 		conn, err := t.listener.Accept()
+		fmt.Println("Tcp Accept")
 		if err != nil {
 			fmt.Printf("TCP accept loop err: %s\n", err)
 		}
@@ -91,13 +102,15 @@ func (t *TCPTransport) handleConn(conn net.Conn) {
 			return
 		}
 	}
+	fmt.Println("Tcp handle con")
 	for {
 		rpc := RPC{}
+		fmt.Println("got somhinh")
 		if err := t.Decoder.Decode(conn, &rpc); err != nil {
 			return
 		}
-
-		rpc.From=conn.RemoteAddr().String()
+		fmt.Printf("Tcp Decoded %+v", string(rpc.Payload))
+		rpc.From = conn.RemoteAddr().String()
 
 		t.rpcch <- rpc
 	}
