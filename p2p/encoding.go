@@ -8,11 +8,13 @@ import (
 type Decoder interface {
 	Decode(io.Reader, *RPC) error
 }
+
 type DefaultDecoder struct {
 }
 
 type DefaultDecoder2 struct {
 }
+
 func (dec DefaultDecoder) Decode(r io.Reader, msg *RPC) error {
 	buf := make([]byte, 1024)
 	n, err := r.Read(buf)
@@ -20,8 +22,8 @@ func (dec DefaultDecoder) Decode(r io.Reader, msg *RPC) error {
 		return err
 	}
 	msg.Payload = buf[:n]
-	fmt.Println("msg", string(msg.Payload))
 
+	 // fmt.Printf("--------Decode:%+v ",string(msg.Payload))
 	return nil
 }
 

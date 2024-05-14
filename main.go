@@ -26,20 +26,26 @@ func makeServer(addr string, nodes ...string) *FileServer {
 }
 func main() {
 	s1 := makeServer(":3000")
-	s3 := makeServer(":3001")
-	s2 := makeServer(":4000", ":3000",":3001")
+	// s3 := makeServer(":3001")
+	s2 := makeServer(":4000", ":3000")
 	time.Sleep(time.Second)
 	go func() {
 		s1.Start()
 	}()
-	go func() {
-		s3.Start()
-	}()
+	// go func() {
+	// 	s3.Start()
+	// }()
 	time.Sleep(time.Second)
 	go s2.Start()
-	data := bytes.NewReader([]byte("jojojojo"))
-	s2.Store("heja", data)
 	time.Sleep(time.Second)
+	data := bytes.NewReader([]byte("jojojojo"))
+	// path := "./storage/test"
+	// fs,err  := os.ReadFile(path)
+	//  if err != nil {
+	// 	 fmt.Println(err)
+	//  }
+	//  data2 := bytes.NewReader(fs)
+	s2.Store("heja", data)
 	// RenderMenu()
 	select {}
 }

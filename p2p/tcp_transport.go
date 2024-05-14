@@ -3,10 +3,13 @@ package p2p
 import (
 	"fmt"
 	"net"
+	"sync"
 )
 
 type TCPPeer struct {
 	net.Conn
+
+	Wg *sync.WaitGroup
 }
 
 func NewTCPPeer(conn net.Conn) *TCPPeer {
@@ -16,12 +19,8 @@ func NewTCPPeer(conn net.Conn) *TCPPeer {
 }
 
 func (t *TCPPeer) Send(m []byte) error {
-	n, err := t.Conn.Write(m)
-	if err != nil {
-		return err
-	}
-	fmt.Printf("Wrote (%d) bytes to conn\n",n)
-	return nil
+	_, err := t.Conn.Write(m)
+	return err
 }
 func (t *TCPPeer) Close() error {
 	return t.Close()
@@ -47,13 +46,17 @@ func NewTCPTransport(opts TCPTransportOpts) *TCPTransport {
 }
 
 func (t *TCPTransport) Dial(addr string) error {
-	fmt.Printf("Peer dialing [%s]\n",addr)
+	fmt.Printf("Peer dialing [%s]\n", addr)
 	conn, err := net.Dial("tcp", addr)
 	if err != nil {
 		return err
 	}
 	go t.handleConn(conn)
 	return nil
+}
+
+func (t *TCPTransport) Addr() string {
+	return t.ListenAddr
 }
 
 func (t *TCPTransport) Consume() <-chan RPC {
@@ -67,7 +70,7 @@ func (t *TCPTransport) Close() error {
 func (t *TCPTransport) ListenAndAccept() error {
 	var err error
 	t.listener, err = net.Listen("tcp", t.ListenAddr)
-	fmt.Printf("Tcp Listen on [%s]\n",t.ListenAddr)
+	fmt.Printf("Tcp Listen on [%s]\n", t.ListenAddr)
 	if err != nil {
 		return err
 	}
@@ -89,8 +92,9 @@ func (t *TCPTransport) startAcceptLoop() {
 }
 
 func (t *TCPTransport) handleConn(conn net.Conn) {
-	fmt.Printf("Peer [%s] handling connection\n",t.ListenAddr)	
+	fmt.Printf("Peer [%s] handling connection\n", t.ListenAddr)
 	defer func() {
+		fmt.Println("Dropping connection")
 		conn.Close()
 	}()
 
@@ -106,7 +110,6 @@ func (t *TCPTransport) handleConn(conn net.Conn) {
 			return
 		}
 		rpc.From = conn.RemoteAddr().String()
-
 		t.rpcch <- rpc
 	}
 }
