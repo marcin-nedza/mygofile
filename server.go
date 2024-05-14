@@ -41,12 +41,15 @@ func NewFileServer(opts FileServerOpts) *FileServer {
 func (s *FileServer) broadcast(msg *Message) error {
 	buf := new(bytes.Buffer)
 	//encode data
-	fmt.Println("broadcast: encoding msg")
+	fmt.Printf("broadcasting message to all peers\n")
 	if err := gob.NewEncoder(buf).Encode(msg); err != nil {
 		return err
 	}
 	for _, peer := range s.peers {
-		peer.Send(buf.Bytes())
+		fmt.Println("Sending from loop", peer.LocalAddr())
+		if err := peer.Send(buf.Bytes()); err != nil {
+			return err
+		}
 	}
 	//send data to all peers
 	return nil
@@ -76,7 +79,7 @@ func (s *FileServer) OnPeer(p p2p.Peer) error {
 	s.onPeerLock.Lock()
 	defer s.onPeerLock.Unlock()
 	s.peers[p.RemoteAddr().String()] = p
-	log.Printf("connected with remote %s", p.RemoteAddr())
+	log.Printf("connected with remote %s\n", p.RemoteAddr())
 	return nil
 }
 
@@ -86,7 +89,10 @@ type Message struct {
 
 func (s *FileServer) bootstrapNetwork() error {
 	for _, addr := range s.BootstrapNodes {
-		fmt.Printf("Attempting to connect with remote [%s]", addr)
+		if len(addr)==0{
+			continue
+		}
+		fmt.Printf("Attempting to connect with remote [%s]\n", addr)
 		go func(addr string) {
 			if err := s.Transport.Dial(addr); err != nil {
 				log.Println(err)
@@ -98,21 +104,18 @@ func (s *FileServer) bootstrapNetwork() error {
 
 func (s *FileServer) loop() {
 
-	fmt.Println("FileServer start loop")
 	defer func() {
 		s.Transport.Close()
 	}()
 	for {
 		select {
 		case rpc := <-s.Transport.Consume():
-			fmt.Printf("FileServer case rpc: %+v", rpc)
 			var msg Message
-			fmt.Println("------")
 			if err := gob.NewDecoder(bytes.NewBuffer(rpc.Payload)).Decode(&msg); err != nil {
 				fmt.Println("Error decoding:", err)
 				return
 			}
-			fmt.Printf("Decoded msg %+v",msg)
+			fmt.Printf("Decoded msg %+v\n", msg)
 		}
 
 	}
