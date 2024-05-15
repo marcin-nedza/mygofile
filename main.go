@@ -1,51 +1,50 @@
 package main
 
 import (
-	"bytes"
+	"log"
 	"myfile/p2p"
 	"time"
 )
 
-func makeServer(addr string, nodes ...string) *FileServer {
-	tcpTransportOpt := p2p.TCPTransportOpts{
-		ListenAddr: addr,
-		Decoder:    p2p.DefaultDecoder{},
+func makeServer(listenAddr string, nodes ...string) *FileServer {
+	tcpTransportOpts := p2p.TCPTransportOpts{
+		ListenAddr:    listenAddr,
+		HandshakeFunc: p2p.NOPHandshakeFunc,
+		Decoder:       p2p.DefaultDecoder{},
 	}
-	tcpTransport := p2p.NewTCPTransport(tcpTransportOpt)
 
-	fileserverOpts := FileServerOpts{
-		Transport:         tcpTransport,
+	tcpTransport := p2p.NewTCPTransport(tcpTransportOpts)
+
+	fileServerOpts := FileServerOpts{
+		StorageRoot:       listenAddr + "_network",
 		PathtransformFunc: CASPathtransformFunc,
-		StorageRoot:       addr + "_storage",
+		Transport:         tcpTransport,
 		BootstrapNodes:    nodes,
 	}
 
-	s := NewFileServer(fileserverOpts)
+	s := NewFileServer(fileServerOpts)
+
 	tcpTransport.OnPeer = s.OnPeer
 	return s
+
 }
+
 func main() {
-	s1 := makeServer(":3000")
-	// s3 := makeServer(":3001")
+	s1 := makeServer(":3000", ":4000")
 	s2 := makeServer(":4000", ":3000")
-	time.Sleep(time.Second)
+	// s3 := makeServer(":4001")
+
 	go func() {
-		s1.Start()
+		log.Fatal(s1.Start())
 	}()
-	// go func() {
-	// 	s3.Start()
-	// }()
-	time.Sleep(time.Second)
+
+	time.Sleep(time.Second * 2)
 	go s2.Start()
 	time.Sleep(time.Second)
-	data := bytes.NewReader([]byte("jojojojo"))
-	// path := "./storage/test"
-	// fs,err  := os.ReadFile(path)
-	//  if err != nil {
-	// 	 fmt.Println(err)
-	//  }
-	//  data2 := bytes.NewReader(fs)
-	s2.Store("heja", data)
-	// RenderMenu()
+
+	// data := bytes.NewReader([]byte("my big data titile here!"))
+	// s2.Store("coolPicture.jpg", data)
+	time.Sleep(time.Millisecond * 5)
+	RenderMenu(s2)
 	select {}
 }

@@ -56,31 +56,30 @@ func NewStore(opts StoreOpts) *Store {
 	}
 }
 
-func (s *Store) writeStream(key string, r io.Reader) error {
-	fmt.Println("\n\t --> write stream", key)
+func (s *Store)Write(key string, r io.Reader)(int64,error) {
+	return s.writeStream(key,r)
+}
 
+func (s *Store) writeStream(key string, r io.Reader) (int64,error) {
 	pathKey := s.PathtransformFunc(key)
 	pathnamewithRoot := fmt.Sprintf("%s/%s", s.Root, pathKey.Pathname)
 
 	err := os.MkdirAll(pathnamewithRoot, os.ModePerm)
 	if err != nil {
-		return err
+		return 0,err
 	}
 
 	fullpathwithroot := fmt.Sprintf("%s/%s", s.Root, pathKey.FullPath())
-	fmt.Println("--->FULLPATHWITHROOT:", fullpathwithroot)
 	f, err := os.Create(fullpathwithroot)
 	if err != nil {
-
+		return 0,err
 	}
-	fmt.Printf("\n---------------------------------%+v\n", r)
 	n, err := io.Copy(f, r)
 	if err != nil {
-		return err
+		return 0,err
 	}
-	fmt.Println("WIRTE STREAM N ", n)
 	//write to disk
-	return nil
+	return n,nil
 }
 
 func (p PathKey) FullPath() string {
